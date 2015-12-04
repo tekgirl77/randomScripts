@@ -21,31 +21,38 @@ sum = function (A) {
     'use strict';
     var X = 0,
         Y = 0,
+        i,
         result;
     // Given an array of zero-indexed M bits, calculate representation of base -2 integer X:
-    for (var i = 0; i < A.length; i++) {
-        X += A[i] * Math.pow(-2,i);
+    for (i = 0; i < A.length; i++) {
+        X += A[i] * Math.pow(-2, i);
     }
     // Set target Y as negative X:
-    Y = -X;
+    if (X <= 100000 || X >= -100000) {
+        Y = -X;
+    } else {
+        console.log("X is: " + X);
+        console.log("Please input a base which results in a base10 integer between -100,000 to 100,000");
+    }
     //Y = 100000;
     // Function to calculate and return the shortest sequence of bits representing -X.
     // We will count up to a max of 2048 in binary, compute base -2 algorithm, and
     // compare to Y for a match:
-    result = function(Y) {
-        var count = 1;
+    result = function (Y) {
+        var count = 1,
+            j,
+            results = [],
+            sum = 0;
         // Function to convert our count to binary:
         function dec2bin(dec){
             return (dec).toString(2).split("");
         }
         while (count < 300000) {
-            var results = [],
-                sum = 0;
             results = dec2bin(count);
-            console.log("Binary count is: " + count + " : " + results);
+            console.log("Base10 and Base2 count are: " + count + " : " + results);
             // Start at the top of the array to find the first '1',
             // so we can slice off trailing 0's before computing algorithm:
-            for (var j = results.length-1; j--;) {
+            for (j = results.length - 1; j--;) {
                 // If '1' is already the last bit in the array, no slice needed.
                 if ((results[j] === 1) && (j = results.length-1)) {
                     break;
