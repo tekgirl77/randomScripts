@@ -1,7 +1,6 @@
 /**
  * Created by Salle on 12/3/15.
  */
-
 // In base -2, integers are represented by sequences of bits ordered from the
 // least to the most significant. The resulting base -2 integer from sequence A
 // of N bits is computed by: sum{ A[i]&(-2)^i for i = 0..N-1 }.
@@ -10,16 +9,19 @@
 // A is an integer within the range [0..100,000]
 // Each element of the sequence array is an integer with a value of 1 or 0.
 
-var A = [1,0,0,1,1]; //9
-//var A = [1,1,0,1]; //-9
-//var A = [1,0,0,1,1,1]; //-23
-//var A = [1,1,0,1,0,1,1]; //23
-//var A = [1,1,0,0,0,0,1,1,0,1,0,1,0,0,0,0,0];
+var sum = 0,
+    A = [1, 0, 0, 1, 1]; //9
+    //A = [1, 1, 0, 1]; //-9
+    //A = [1, 0, 0, 1, 1, 1]; //-23
+    //A = [1, 1, 0, 1, 0, 1, 1]; //23
+    //A = [1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0];
 
 
-sum = function(A) {
+sum = function (A) {
+    'use strict';
     var X = 0,
-        Y = 0;
+        Y = 0,
+        result;
     // Given an array of zero-indexed M bits, calculate representation of base -2 integer X:
     for (var i = 0; i < A.length; i++) {
         X += A[i] * Math.pow(-2,i);
