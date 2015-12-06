@@ -1,7 +1,10 @@
 /**
  * Created by Salle on 11/25/15.
  */
-/**
+/*jslint node: true */
+"use strict";
+
+/*
  Slightly modified version
  of the anagram found on Stackoverflow.
  @see: http://stackoverflow.com/a/16577324/1707987

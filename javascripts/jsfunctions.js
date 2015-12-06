@@ -1,8 +1,9 @@
 /**
  * Created by Salle on 11/25/15.
  */
-
+/*jslint node: true */
 "use strict";
+
 var ourBuddy = {
     name: "Geronimo",
     nicknames: ["Ger", "Geronimooo", "Buddy"],
