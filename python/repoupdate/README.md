@@ -1,5 +1,14 @@
-This daemon script can be used to keep an s3-hosted yum repository updated
-when new rpm packages are added or removed to the s3 bucket.
+# S3 YUM REPOUPDATER
+--------------------
+This daemon script can be used to keep an s3-hosted YUM repository updated
+when new RPM packages are added or removed to the S3 bucket. It listens on 
+the respective AWS SQS queue for S3 event messages that specify new packages 
+published or removed from a YUM repo hosted on S3.
+
+After waiting a while and grouping any additional messages, the script will
+update the YUM repodata files to add or remove the packages as directed by the
+'add' or 'remove' operation.
+
 It is equivalent to using `createrepo` and an `s3cmd sync`.
 
 Only a temporary copy of the repo metadata is needed locally, so there's no
@@ -15,8 +24,8 @@ with concurrent updates.
 The addition/removal of new package(s) to s3 can be handled by whatever client is
 used to build RPMs, e.g. a CI system like Jenkins or Buildbot.
 
-HOW-TO
-------
+## HOW-TO
+---------
 To add/remove package(s), use the `bin/updatePackages.py` helper script. Once package(s)
 have been added/removed, S3 will send an event notification to an SQS queue to notify the daemon.
 Usage Examples:
@@ -36,8 +45,8 @@ updates, then uploads them back to S3.
 The daemon uses standard boto configuation to access the AWS credentials: IAM
 role, environment variables, or boto config file.
 
-Configure YUM Repo
-------------------
+### Configure YUM Repo
+----------------------
 Create the following INI formatted file and save to /etc/yum.repos.d/your.repo:
 ```ini
 [your-rpms]
@@ -52,8 +61,8 @@ yum clean all
 yum makecache fast
 ```
 
-Run Daemon
-----------
+### Run Daemon
+--------------
 The daemons are configured to run when the dev server is started.
     /usr/local/bin/repoupdate-daemon.py -q your-repo_new-packages -d
     /usr/local/bin/repoupdate-daemon.py -q your-repo_removed-packages -d
@@ -61,8 +70,8 @@ The daemons are configured to run when the dev server is started.
 Verify daemon is running:
 `ps aux | grep -i repoupdate`
 
-Test Add/Remove
----------------
+### Test Add/Remove
+-------------------
 Run the `updatePackages` helper script:
 ```sh
 ./bin/updatePackages.py -b mybucket -o 'add' local/dir/some*.rpm
