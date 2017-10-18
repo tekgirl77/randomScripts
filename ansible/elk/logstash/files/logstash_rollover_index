@@ -1,0 +1,19 @@
+#!/bin/bash
+
+NOW=`date --rfc-2822`
+
+printf "\n**************************************************************************\n"
+printf "Running /bin/logstash_rollover_index first day of each month @12am UTC...\n"
+printf "$NOW\n\n"
+
+URL="https://your-elasticsearch-endpoint.us-west-1.aws.found.io:9243/current/_rollover/%3Clogstash-%7Bnow%2FM%7BYYYY.MM%7D%7D%3E"
+USER="elastic-user-here:password-here"
+DATA="{\"settings\":{\"index.number_of_shards\":2,\"number_of_replicas\":0}}"
+
+/usr/bin/curl -i --ssl-reqd --user "$USER" \
+-XPOST "$URL" \
+-H 'Content-Type: application/json' \
+-d "$DATA"
+
+printf "\n**************************************************************************\n"
+exit

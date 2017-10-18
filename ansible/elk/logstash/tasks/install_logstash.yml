@@ -1,0 +1,84 @@
+- name: Remove java-1.7.0-openjdk
+  yum: name=java-1.7.0-openjdk state=absent
+
+- name: Install java-1.8.0-openjdk 
+  yum: name=java-1.8.0-openjdk state=latest 
+
+- name: Import elasticsearch repo gpg key 
+  command: rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+- name: Create elastic repo 
+  copy: src=elastic.repo dest=/etc/yum.repos.d/elastic.repo mode=0644
+
+- name: Install logstash
+  yum: name=logstash state=latest
+  environment:
+    PATH: $PATH:/usr/share/logstash/bin
+
+- name: chown/chmod /var/lib/logstash dir 
+  file: path=/var/lib/logstash owner=logstash group=logstash mode=0644
+
+- name: chown/chmod /var/log/logstash dir 
+  file: path=/var/log/logstash owner=logstash group=logstash mode=0644
+
+- name: Move custom logstash.yml settings file
+  copy: src=logstash.yml dest=/etc/logstash/logstash.yml mode=0644
+
+# Move custom log4j2.properties to /etc/logstash/
+- name: Move log4j2.properties file 
+  copy: src=log4j2.properties dest=/etc/logstash/log4j2.properties mode=0644 
+
+# Move pipelines to /etc/logstash/conf.d/
+- name: Move pipeline.conf to transform data before elasticsearch
+  copy: src=pipeline.conf dest=/etc/logstash/conf.d/pipeline.conf mode=0644
+
+# Move startup.options to /etc/logstash
+- name: Move startup.options to /etc/logstash 
+  copy: src=startup.options dest=/etc/logstash/startup.options mode=0644
+
+- name: Symlink default $LS_HOME/config location to /etc/logstash dir for RPM installs so Logstash can find config files
+  command: ln -s /etc/logstash/ /usr/share/logstash/config
+
+- name: Symlink the patterns dir for the logstash grok input filter
+  command: ln -s /usr/share/logstash/vendor/bundle/jruby/1.9/gems/logstash-patterns-core-4.1.1/patterns/ /etc/logstash/patterns
+
+- name: Move logstash_rollover_index script to rollover to new index with 'current' alias @12am 1st of each month 
+  copy: src=logstash_rollover_index dest=/usr/bin/logstash_rollover_index mode=0755
+
+- name:
+  cronvar: name=LOGSTASH_PLAIN value="/var/log/logstash/logstash-plain.log" user=root
+
+- name: logstash_rollover_index
+  cron:
+    name: "Logstash Rollover Elasticsearch Index"
+    user: root 
+    minute: "0"
+    hour: "0"
+    day: "1"
+    job: "/usr/bin/logstash_rollover_index &>>$LOGSTASH_PLAIN"
+    state: present 
+
+# logstash handles log rotation for these, so cron will delete old log files over 7 days old
+- name: remove_old_logstash-plain-*.log_files
+  cron:
+    name: "Remove old logstash-plain-*.log files"
+    user: root 
+    minute: "0"
+    hour: "0"
+    day: "*"
+    job: >
+      "printf "Removing logstash-plain-*.log files older than 7 days...\n" &>>$LOGSTASH_PLAIN;/usr/bin/find /var/log/logstash -mtime +7 -name "logstash-plain-*.log" -print -delete &>>$LOGSTASH_PLAIN"
+    state: present
+
+# These logs will grow forever, so we will use logrotate to handle the rotation and removal
+- name: Move logstash logrotate conf file into place to handle logstash-stderr and logstash-stdout files
+  copy: src=logstash_logrotate dest=/etc/logrotate.d/logstash mode=0644
+
+- name: Move logstash-stderr and logstash-stdout default location from /var/log to /var/log/logstash 
+  command: "{{ item }} /etc/init/logstash.conf" 
+  with_items:
+    - sed -i -e 's/\/var\/log\/logstash-stdout.log/\/var\/log\/logstash\/logstash-stdout.log/'
+    - sed -i -e 's/\/var\/log\/logstash-stderr.log/\/var\/log\/logstash\/logstash-stderr.log/'
+
+- name: Start logstash upstart init as daemon
+  command: start logstash 

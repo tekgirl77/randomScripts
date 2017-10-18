@@ -1,0 +1,40 @@
+- name: Import elasticsearch repo gpg key 
+  command: rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+- name: Create elastic repo 
+  copy: src=elastic.repo dest=/etc/yum.repos.d/elastic.repo mode=0644
+
+- name: Install filebeat
+  yum: name=filebeat state=latest
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/usr/share/filebeat/bin"
+
+- name: Move global filebeat.yml settings file
+  copy: src=filebeat.yml dest=/etc/filebeat/filebeat.yml mode=0644
+
+- name: Create /etc/filebeat/conf.d/ dir 
+  file: path=/etc/filebeat/conf.d state=directory mode=0766 owner=root group=root
+
+- name: Move pipeline config file
+  copy: src=beat.yml dest=/etc/filebeat/conf.d/beat.yml mode=0644 
+
+- name: Set script in place to get server mode/type when instance is provisioned so we can update /etc/filebeat/filebeat.yml accordingly
+  copy: src=mode.sh dest=/usr/local/bin/mode.sh mode=0755
+
+- name: Add mode.sh script to rc.local to run at startup
+  lineinfile: dest=/etc/rc.d/rc.local line="/usr/local/bin/mode.sh" state=present
+
+# core/error_logging.send_errors_to_file() handles daily log rotation for these and cron will delete old log files over 7 days old
+- name: Cron job to clean up apache/log/backend_errors* log files
+  cron:
+    name: "Remove backend_errors log files over 7 days old"
+    user: root 
+    minute: "0"
+    hour: "0"
+    job: >
+      'printf "Removing backend_errors log files older than 7 days...\n" &>>/var/log/messages;
+      /usr/bin/find /home/actionkit/actionkit/apache/logs -mtime +7 -name "backend_errors.*" -print -delete &>>/var/log/messages'
+    state: present
+
+- name: Disable filebeat as service; it will be started by /etc/rc.d/rc.local upon instance provisioning
+  service: name=filebeat state=stopped enabled=no

@@ -1,0 +1,30 @@
+/var/log/logstash/logstash-std*.log {
+    missingok
+    compress
+    nocopy
+    create 0644 root root
+    daily
+    dateext
+    ifempty
+    maxage 14
+    rotate 14
+    postrotate
+        restart logstash
+    endscript
+}
+
+/var/log/logstash/logstash-slowlog-plain.log {
+    missingok
+    compress
+    nocopy
+    create 0644 root root
+    daily
+    dateext
+    notifempty
+    size 10M
+    rotate 10
+    maxage 30
+    postrotate
+        restart logstash
+    endscript
+}
